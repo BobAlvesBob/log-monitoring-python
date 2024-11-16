@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server_container
+    ports:
+      - "8000:8000"
+    networks:
+      - lognet
+    restart: always
+
+  client:
+    build:
+      context: ./local_machine
+      dockerfile: Dockerfile
+    container_name: client_container
+    networks:
+      - lognet
+    depends_on:
+      - server
+    environment:
+      - SERVER_URL=http://server:8000  # Passa o valor diretamente como variável de ambiente
+    restart: always
+
+networks:
+  lognet:
+    driver: bridge
