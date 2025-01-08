@@ -4,6 +4,9 @@ import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+# Importa a função que envia logs ao servidor
+from send_logs import send_logs
+
 class Blockchain:
     def __init__(self):
         self.chain = []
@@ -45,16 +48,22 @@ class BlockchainLogHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        # Adiciona um novo bloco à blockchain com a entrada de log
+        # Adiciona um novo bloco à blockchain local
         new_block = self.blockchain.add_block(log_entry)
-        print(f"Bloco adicionado: {new_block}")
+        print(f"Bloco adicionado localmente: {new_block}")
+
+        # Envia o mesmo log ao servidor
+        # Utiliza o "previous_hash" do bloco que acabamos de criar
+        previous_hash = new_block["previous_hash"]
+        send_logs(log_entry, previous_hash)
 
 # Função principal que configura o logger e o monitoramento
 def main():
-    # Criando a blockchain
+    # Criando a blockchain local
     blockchain = Blockchain()
 
-    # Criando o manipulador de logs que envia logs para a blockchain
+    # Criando o manipulador de logs que envia logs para a blockchain local
+    # e depois faz o POST ao servidor
     blockchain_handler = BlockchainLogHandler(blockchain)
     blockchain_handler.setLevel(logging.INFO)
     blockchain_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
@@ -66,9 +75,8 @@ def main():
 
     # Simulando eventos de log no terminal
     try:
-        print("Monitorando os logs do terminal e adicionando-os à blockchain...")
+        print("Monitorando os logs do terminal e adicionando-os à blockchain local e ao servidor...")
         while True:
-            # Aqui você pode gerar logs manualmente no terminal
             log_message = input("Digite uma mensagem de log (ou 'sair' para terminar): ")
             if log_message.lower() == 'sair':
                 break
